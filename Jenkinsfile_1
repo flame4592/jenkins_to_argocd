@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define your Docker registry credentials
+        DOCKER_REGISTRY_CREDENTIALS = credentials('your-docker-registry-credentials-id')
+        DOCKER_IMAGE_NAME = 'your-docker-image-name'
+        DOCKER_IMAGE_TAG = 'latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout your source code from your version control system (e.g., Git)
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    def dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKERTAG}")
+
+                    // Push the Docker image to the registry
+                    docker.withRegistry('https://your-docker-registry-url', DOCKER_REGISTRY_CREDENTIALS) {
+                        app.push("${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+
+
+    // build Job :- updatemanifest the 2nd pipeline name that will be triggered to make the changes in the manifest repo to update to the imagetag in deployment.yaml
+
+    stage('Trigger ManifestUpdate') {
+                echo "triggering updatemanifestjob"
+                build job: 'updatemanifest', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+        }
+    }
+
+    post {
+        success {
+            // Cleanup or perform additional actions on success
+        }
+    }
+}
